@@ -13,7 +13,7 @@ import me.grishka.appkit.utils.WorkerThread;
  * Created by grishka on 17.12.14.
  */
 public class ImageLoaderThreadPool {
-	private static final int THREAD_COUNT=8;
+	private static final int THREAD_COUNT=128;
 	private static final ThreadPoolExecutor cacheExecutor=new ThreadPoolExecutor(THREAD_COUNT, THREAD_COUNT, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), new LoaderThreadFactory());
 	private static final WorkerThread canceler;
 

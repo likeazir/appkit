@@ -327,7 +327,17 @@ public class ImageCache{
 				}
 				return;
 			}
-			final DiskLruCache.Editor editor=diskCache.edit(diskKey);
+			DiskLruCache.Editor maybeEditor=diskCache.edit(diskKey);
+			for (int i = 0; i < 30 && maybeEditor == null && !dlInfo.canceled; i++) {
+				try {
+					//alternative would be to fail and then never load the image
+					Thread.sleep(100 + i * 100L);
+					maybeEditor = diskCache.edit(diskKey);
+				} catch (InterruptedException e) {
+					Log.e(TAG, e.toString());
+				}
+			}
+			DiskLruCache.Editor editor = maybeEditor;
 			if(editor==null){
 				throw new IllegalStateException("Another thread has this file open -- should never happen");
 			}
