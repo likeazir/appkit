@@ -327,15 +327,8 @@ public class ImageCache{
 				}
 				return;
 			}
-			final DiskLruCache.Editor editor=diskCache.edit(diskKey);
-			if(editor==null){
-				throw new IllegalStateException("Another thread has this file open -- should never happen");
-			}
-			OutputStream out=new FileOutputStream(editor.getFile(0));
-			downloader.downloadFile(req, out, pc, dlInfo, ()->{
+			downloader.downloadFile(req, diskCache, pc, dlInfo, ()->{
 				try{
-					out.close();
-					editor.commit();
 					if(dlInfo.canceled)
 						return;
 					DiskLruCache.Value value=diskCache.get(diskKey);
@@ -361,13 +354,6 @@ public class ImageCache{
 					invokeFailureCallbacks(req, x);
 				}
 			}, err->{
-				try{
-					out.close();
-					editor.abort();
-					diskCache.remove(diskKey);
-				}catch(IOException x){
-					Log.e(TAG, "Failed to remove a failed download from disk cache", x);
-				}
 				if(!dlInfo.canceled)
 					invokeFailureCallbacks(req, err);
 			});
@@ -617,7 +603,7 @@ public class ImageCache{
 
 	public class ImageDownloadInfo{
 		private ArrayList<PendingImageRequest> requests=new ArrayList<>();
-		private final String diskCacheKey;
+		public final String diskCacheKey;
 		public Call httpCall;
 		private boolean canceled;
 

@@ -1,11 +1,13 @@
 package me.grishka.appkit.imageloader.downloaders;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import me.grishka.appkit.imageloader.ImageCache;
+import me.grishka.appkit.imageloader.disklrucache.DiskLruCache;
 import me.grishka.appkit.imageloader.requests.ImageLoaderRequest;
 import me.grishka.appkit.imageloader.requests.UrlImageLoaderRequest;
 import me.grishka.appkit.utils.NetworkUtils;
@@ -39,7 +41,7 @@ public class HTTPImageDownloader extends ImageDownloader {
 	}
 
 	@Override
-	public void downloadFile(ImageLoaderRequest _req, OutputStream out, ImageCache.ProgressCallback callback, ImageCache.ImageDownloadInfo info, Runnable onSuccess, Consumer<Throwable> onError){
+	public void downloadFile(ImageLoaderRequest _req, DiskLruCache diskCache, ImageCache.ProgressCallback callback, ImageCache.ImageDownloadInfo info, Runnable onSuccess, Consumer<Throwable> onError){
 		synchronized(this){
 			if(httpClient==null){
 				httpClient=new OkHttpClient.Builder()
@@ -63,11 +65,24 @@ public class HTTPImageDownloader extends ImageDownloader {
 
 			@Override
 			public void onResponse(Call call, Response response) throws IOException{
+				DiskLruCache.Editor editor=null;
+				OutputStream out=null;
 				try(ResponseBody body=response.body()){
+					editor = diskCache.edit(info.diskCacheKey);
+					out=new FileOutputStream(editor.getFile(0));
 					Sink outSink=Okio.sink(out);
 					body.source().readAll(outSink);
+					out.close();
+					editor.commit();
 					onSuccess.run();
 				}catch(Throwable x){
+					if (out != null){
+						out.close();
+					}
+					if (editor != null){
+						editor.abort();
+					}
+					diskCache.remove(info.diskCacheKey);
 					onError.accept(x);
 				}finally{
 					info.httpCall=null;
