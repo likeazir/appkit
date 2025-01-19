@@ -46,10 +46,11 @@ afterEvaluate { project ->
     publishing {
         repositories {
             maven {
-                url = getReleaseRepositoryUrl()
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/likeazir/appkit")
                 credentials {
-                    username = getRepositoryUsername()
-                    password = getRepositoryPassword()
+                    username = System.getenv("USERNAME")
+                    password = System.getenv("TOKEN")
                 }
             }
         }
@@ -58,37 +59,12 @@ afterEvaluate { project ->
                 from components.release
                 artifact tasks.androidSourcesJar
                 artifact tasks.javadocJar
-                groupId = 'me.grishka.appkit'
+                groupId = 'eu.ff15.appkit'
                 artifactId = project.name
                 version = project.version
                 pom {
-                    name = "AppKit"
-                    description = "Android app boilerplate and image loader"
-                    url = "https://github.com/grishka/appkit"
-                    licenses {
-                        license {
-                            name = 'The Unlicense'
-                            url = 'https://unlicense.org'
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = 'grishka'
-                            name = 'Gregory Klyushnikov'
-                            email = 'mavencentral@grishka.me'
-                        }
-                    }
-                    scm {
-                        url = 'https://github.com/grishka/appkit'
-                        connection = 'scm:git:git://github.com/grishka/appkit.git'
-                        developerConnection = 'scm:git:ssh://github.com:grishka/appkit.git'
-                    }
                 }
             }
         }
-    }
-
-    signing {
-        sign publishing.publications.release
     }
 }
